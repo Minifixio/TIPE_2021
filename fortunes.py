@@ -56,10 +56,12 @@ class Arete:
         # équation de la bissectrice des deux points
         if droite.y == gauche.y: # Cas particulier ou les deux points sont sur la même ordonnée Y
             self.m = math.inf
+            
+            ## A REVOIR PRECISEMENT
+            self.k = 0
         else:
             self.m = - (gauche.x - droite.x) / (gauche.y - droite.y)
-       
-        self.k = (0.5 * (gauche.x ** 2 - droite.x ** 2 + gauche.y ** 2 - droite.y ** 2)) / (gauche.y - droite.y)
+            self.k = (0.5 * (gauche.x ** 2 - droite.x ** 2 + gauche.y ** 2 - droite.y ** 2)) / (gauche.y - droite.y)
         
         if origine_x != None:
             self.origine = Point(origine_x, self.calcul_y(origine_x))
@@ -240,6 +242,12 @@ def para_intersect_x(para1, para2, y=None):
             # print('Déterminant négatif', det)
             return para2.site.x
         else:
+            if a==0:
+                if c==0:
+                    return para2.site.x
+                else:
+                    return -c/b
+                
             x1=(-b-math.sqrt(det))/(2*a)
             x2=(-b+math.sqrt(det))/(2*a)
             
@@ -416,24 +424,28 @@ def terminer_aretes():
     global Voronoi, x_max, y_max
     
     for ar in Voronoi:
-        if ar.fin == None and not point_dehors(ar.origine) and not ar.valide:
-            yl = ar.calcul_y(x_max)
-            if ar.k >= 0:
-                if yl>y_max:
-                    xl=ar.calcul_x(y_max)
-                    yl=y_max
+        # A VERIFIER PRECISEMENT
+        if ar.origine.y==None:
+            return
+        else:
+            if ar.fin == None and not point_dehors(ar.origine) and not ar.valide:
+                yl = ar.calcul_y(x_max)
+                if ar.k >= 0:
+                    if yl>y_max:
+                        xl=ar.calcul_x(y_max)
+                        yl=y_max
+                    else:
+                        xl=x_max
+                    ar.achever(Point(xl,yl))
                 else:
-                    xl=x_max
-                ar.achever(Point(xl,yl))
-            else:
-                yl=ar.calcul_y(x_max)
-                if yl<0:
-                    xl=ar.calcul_x(0)
-                    yl=0
-                else:
-                    xl=x_max
-                ar.achever(Point(xl,yl))
-    
+                    yl=ar.calcul_y(x_max)
+                    if yl<0:
+                        xl=ar.calcul_x(0)
+                        yl=0
+                    else:
+                        xl=x_max
+                    ar.achever(Point(xl,yl))
+        
 def point_dehors(point):
     global x_max, y_max
     return point.x < 0 or point.x > x_max or point.y < 0 or point.y > y_max

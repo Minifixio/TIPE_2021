@@ -41,6 +41,3 @@ class Visualisation:
     def add_square(self,x,y,largeur,hauteur):
         rect = patches.Rectangle((x, y), largeur, hauteur, linewidth=1, edgecolor='r', facecolor='none')
         axes.add_patch(rect)
-
-
-

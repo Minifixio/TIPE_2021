@@ -247,39 +247,43 @@ def dessin_cercle(centre, rayon, ax, couleur="green"):
     cir=plt.Circle((centre.x, centre.y), rayon, color=couleur, fill=False)
     ax.add_patch(cir)
 
-def plot_centres(data, ax, xmax, ymax, obstacles=None, affinage=1):
+# type == 1 => on calcule la distance aux obstacles après avoir calculé Fortunes avec la polygone
+# type == 2 => on calcule Fortune avec les points obstacles
+def plot_centres(data, ax, xmax, ymax, obstacles=None, type=1, affinage=1):
 
     poly=copy.deepcopy(data)
     poly.affinage_exterieur(affinage)
     poly.affinage_interieur(affinage)
-    centres=fortunes(poly.get_points(), xmax, ymax)
-    centre, rayon = trouve_min_cercle(poly.get_points(), centres, obstacles)
+    
+    if obstacles:
+        if type==1:
+            centres=fortunes(poly.get_points(), xmax, ymax)
+        else:
+            centres=fortunes(poly.get_points()+convertir_point(obstacles), xmax,ymax)
+    else:
+        centres=fortunes(poly.get_points(), xmax, ymax)
 
+    centre, rayon = trouve_min_cercle(poly.get_points(), centres, obstacles)
+    
+    if centre==None:
+        return 
+    
     #poly.dessin_poly(canvas, 'black', 4, debug_points=False, couleurs=False)
     # for c in centres:
     #     dessin_point(c, ax, 2, 'blue')
         
-    print_obstacles(obstacles, ax)
+    #print_obstacles(obstacles, ax)
     dessin_point(centre, ax, 4, 'green')
     dessin_cercle(centre, rayon, ax, couleur='green')
 
-x_zoom=[300000, 400000]
-y_zoom=[6750000, 6800000]
+x_zoom=[190000, 240000]
+y_zoom=[6775000, 6815000]
+# x_zoom=[200000, 300000]
+# y_zoom=[6750000, 6800000]
 
 zones_sensibles_file='donneegeo/Zonages_preservation_OBPNB_GIPBE/Zonages_preservation_OBPNB_GIPBE.shx'
 bassins_file='donneegeo/bassin_versant/bassin_versant.shx'
 mapworld=geopandas.datasets.get_path('naturalearth_lowres')
-
-geom=geopandas.read_file(zones_sensibles_file)
-bassins=geopandas.read_file(bassins_file)
-
-ax = geom.plot()
-bassins.boundary.plot(ax=ax)
-
-ax.set_xlim(x_zoom[0], x_zoom[1])
-ax.set_ylim(y_zoom[0], y_zoom[1])
-
-coords = list(geom.geometry[1].exterior.coords)
 
 def is_in_perimeter(polygon):
     if type(polygon).__name__ == 'Polygon':
@@ -311,14 +315,36 @@ def get_all_points_in_perimeter(data, prec):
             res += poly.exterior.coords[::prec]
     return res
 
-#poly_in_perimeter1 = get_poly_in_perimeter(geom.geometry.to_list(), 90)
-poly_in_perimeter2 = get_poly_in_perimeter(bassins.geometry.to_list(), 20)
-obstacles_points=get_all_points_in_perimeter(geom.geometry.to_list(), 90)
-print(len(geom.geometry.to_list()), len(obstacles_points))
 
-for poly in poly_in_perimeter2:
-    plot_centres(Polygone(poly), ax, x_zoom[1], y_zoom[1], obstacles_points)
-    
-plt.show()
-    
+def plot_zoom(file_obstacles, file_frontieres, x_zoom, y_zoom):
+    geom=geopandas.read_file(file_obstacles)
+    bassins=geopandas.read_file(file_frontieres)
 
+    ax = geom.plot()
+    bassins.boundary.plot(ax=ax)
+
+    ax.set_xlim(x_zoom[0], x_zoom[1])
+    ax.set_ylim(y_zoom[0], y_zoom[1])
+
+    coords = list(geom.geometry[1].exterior.coords)
+    #poly_in_perimeter1 = get_poly_in_perimeter(geom.geometry.to_list(), 90)
+    poly_in_perimeter2 = get_poly_in_perimeter(bassins.geometry.to_list(), 20)
+    obstacles_points=get_all_points_in_perimeter(geom.geometry.to_list(), 20)
+    print(len(geom.geometry.to_list()), len(obstacles_points))
+
+    for poly in poly_in_perimeter2:
+        plot_centres(Polygone(poly), ax, x_zoom[1], y_zoom[1], obstacles_points, type=1)
+        
+    plt.show()
+    
+def plot_all(file1, file2):
+    geom=geopandas.read_file(file1)
+    bassins=geopandas.read_file(file2)
+
+    ax = geom.plot()
+    bassins.boundary.plot(ax=ax)
+        
+    plt.show()
+
+plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom)
+#plot_all(zones_sensibles_file, bassins_file)
