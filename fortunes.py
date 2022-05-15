@@ -1,6 +1,11 @@
 import math
 from tkinter import *
 import numpy as np
+import sys
+from Structures import Point
+from PolygonUtils import affiner_poly
+from TkinterUtils import *
+from Examples import *
 
 # VARIABLES GLOBALES
 y_pos=None # La position y de la ligne de passage
@@ -13,26 +18,14 @@ debug_coords=False # Affiche les coordonées du pointeur dans le terminal
 debug_grap=False
 debug_aretes=False # Aficher les aretes (certaines sont buguées pour l'instant mais c'est pour l'esthétique car ce qui nous interesse c'est les points)
 eps=0.00001 # Epsilon
+cvs=None #Le canvas global
+dessin_on=False #Est-on en mode dessin
 
-y_max=900 # Les bordures du cadre
-x_max=900 # Les bordures du cadre
+y_max=1000 # Les bordures du cadre
+x_max=1000 # Les bordures du cadre
 
 
 # OBJETS
-class Point: 
-    def __init__(self, x, y):
-        self.x=x
-        self.y=y
-
-    def dessin_point(self, canvas, taille, couleur = "red"):
-        canvas.create_oval(self.x - taille, 
-                            self.y - taille, 
-                            self.x + taille, 
-                            self.y + taille, 
-                            fill = couleur)
-    def __str__(self):
-        return "(x={x}, y={y})".format(x = self.x, y = self.y)
-    
 class Arete:   
     valide = False # Pour savoir quand l'arete est achevée
     
@@ -206,10 +199,23 @@ class QueueOfEvents:
             x=self.queue.pop(0)
             return x
     
+    def remove(self, evnt):
+        try:
+            self.queue.remove(evnt)
+        except ValueError:
+            return
+    
     def debug(self):
         debug("Dumping de la pile : ")
         for event in self.queue:
             debug(event)
+
+def find_new_y(p, x):
+    global y_pos, eps
+    dp = 2.0 * (p.y - y_pos)
+    b1 = -(2 * float(p.x)) / float(dp or eps)
+    c1 = y_pos + float(dp/4.0) + (p.x**2) / float(dp or eps)
+    return float(x**2) / float(dp or eps) + float(b1*x) + c1
 
 def para_intersect_x(para1, para2, y=None):
     global y_pos, eps
@@ -258,7 +264,7 @@ def para_intersect_x(para1, para2, y=None):
                 return max(x1, x2)
 
 def traite_site_evnt(evnt):
-    global Racine, Voronoi
+    global Racine, Voronoi, Queue
 
     debug("Site event -> Traitement du site {}".format(evnt))
     
@@ -312,21 +318,22 @@ def traite_site_evnt(evnt):
     #                                                       r et para2           à part
     #                                                        séparées
     
-    
     # On enlève les possibles circle events associés
     if parabole.evnt:
+        Queue.remove(parabole.evnt)
         parabole.evnt.actif=False
         parabole.evnt=None
         
     creer_cercle_evnt(parabole)
     creer_cercle_evnt(parabole_droite)
+    #creer_cercle_evnt(parabole_evnt)
 
     Voronoi.append(arete_gauche)
     Voronoi.append(arete_droite)
 
 # Création d'un "Circle" event, c'est à dire une ordonnée Y correspondant au cercle passant par les trois sites formés par les sites de la parabole à gauche, la courante et celle à droite du site de la parabole courante
 def creer_cercle_evnt(parabole):
-    global y_pos, y_max, Queue, debug_grap
+    global y_pos, y_max, Queue, debug_grap, cvs, dessin_on
 
     debug("Création d'un circle event. " + parabole.__str__())
     
@@ -339,6 +346,7 @@ def creer_cercle_evnt(parabole):
     site_droit = parabole.suiv.site
     
     # Est il possible de créer un cercle inscrit passant par les trois sites
+    # Calcul du determinant des trois points pour voir si ils sont dans le sens antihoraire
     if ((site_parabole.x - site_gauche.x) * (site_droit.y - site_gauche.y) - (site_droit.x - site_gauche.x) * (site_parabole.y - site_gauche.y) <= 0):
         return
     
@@ -347,24 +355,27 @@ def creer_cercle_evnt(parabole):
     
     # Le centre du cercle est à l'intersecion des arêtes de la parabole traitéee (à vérifier...)
     centre_cercle = intersection_aretes(parabole.ar_gauche, parabole.ar_droite)
+    #if centre_cercle==None or parabole.site==None: return
     rayon = math.sqrt((centre_cercle.x - parabole.site.x) ** 2 + (centre_cercle.y - parabole.site.y) ** 2)
     
-    # if debug_grap:
-    #     canvas.create_oval(centre_cercle.x - rayon,
-    #                     centre_cercle.y - rayon,
-    #                     centre_cercle.x + rayon,
-    #                     centre_cercle.y + rayon,
-    #                     outline = "grey",
-    #                     dash=(3,5),
-    #                     width = 1)
+    if debug_grap and dessin_on:
+        cvs.create_oval(centre_cercle.x - rayon,
+                        centre_cercle.y - rayon,
+                        centre_cercle.x + rayon,
+                        centre_cercle.y + rayon,
+                        outline = "grey",
+                        dash=(3,5),
+                        width = 1)
     
     # On détermine l'ordonnée Y de la tangente afin de positionner le circle event dans la pile
     evnt_position_y = rayon + centre_cercle.y
     
-    # Cette position doit être après la beach line, et plus petite que la limite
-    if evnt_position_y > y_pos and centre_cercle.y < y_max:
+    # Cette position doit être après la beach line (et plus petite que la limite i.e evnt_position_y<y_max mais elevé pour l'instant)
+    if evnt_position_y > y_pos:
         cirle_event = CercleEvnt(centre_cercle.x, evnt_position_y, parabole, centre_cercle)
         parabole.evnt = cirle_event
+        #parabole.prec.evnt = cirle_event
+        #parabole.suiv.evnt = cirle_event
         debug("Circle event ajoutée à la pile. " + cirle_event.__str__())
         Queue.insert(cirle_event)
 
@@ -384,7 +395,7 @@ def intersection_aretes(arete_1, arete_2):
 
 # Traitement d'un Circle Event
 def traite_cercle_evnt(evnt):
-    global Voronoi, Sommets
+    global Voronoi, Sommets, Queue
 
     debug("Cercle event -> Traitement du cercle induit par le site {}".format(evnt.parabole.site))
 
@@ -392,9 +403,11 @@ def traite_cercle_evnt(evnt):
     
     # On désactive les circle event des paraboles adjacentes, car ils ne sont plus nécessaires
     if parabole.prec.evnt: 
+        Queue.remove(parabole.prec.evnt)
         parabole.prec.evnt.actif = False
     if parabole.suiv.evnt: 
         parabole.suiv.evnt.actif = False
+        Queue.remove(parabole.suiv.evnt)
 
     # Création d'une nouvelle arête entre deux sites des paraboles adjacentes et on les relie aux paraboles associées
     nouvelle_arete = Arete(parabole.prec.site, parabole.suiv.site)
@@ -471,59 +484,24 @@ def fortunes(points, xmax=None, ymax=None, canvas=None):
         else:
             if event.actif:
                 traite_cercle_evnt(event)
+            else:
+                print(event.__str__())
     
-    terminer_aretes()
-    for arete in Voronoi:
-        if arete:
-            if debug_aretes and canvas:
-                dessin_arete(arete, canvas)
-            if debug_logs:
-                debug(arete)
-            if debug_grap and canvas:
-                dessin_ori_arete(arete, canvas)
-                
+    # terminer_aretes()
+    # for arete in Voronoi:
+    #     if arete:
+    #         if debug_aretes and canvas:
+    #             dessin_arete(arete, canvas)
+    #         if debug_logs:
+    #             debug(arete)
+    #         if debug_grap and canvas:
+    #             dessin_ori_arete(arete, canvas)
+    
+    #print([i.__str__() for i in Sommets])
     
     return Sommets
         
 ## Fonctions d'utils / GUI
-def dessin_point(point, taille, canvas, couleur = "red"):
-    x = point.x
-    y = point.y
-    canvas.create_oval(x - taille, 
-                           y - taille, 
-                           x + taille, 
-                           y + taille, 
-                           fill = couleur)
-
-def dessin_cercle(centre, rayon, canvas, couleur="black", type=None, epaisseur=1):
-    canvas.create_oval(centre.x - rayon, 
-                        centre.y - rayon, 
-                        centre.x + rayon, 
-                        centre.y + rayon, 
-                        width=epaisseur,
-                        outline=couleur)
-
-def dessin_arete(arete, canvas):    
-    if arete.fin == None or arete.origine == None:
-        return
-    else:
-        o=arete.origine
-        f=arete.fin
-        canvas.create_line(o.x, o.y, f.x, f.y, fill = "green", width=2)
-
-def dessin_ori_arete(arete, canvas):
-    dessin_point(arete.origine, 2, canvas, couleur="orange")
-
-def dessin_poly(poly, canvas, couleur="blue", epaisseur=2, debug_points=False):
-    for i in range(len(poly)-1):
-        p1=poly[i]
-        p2=poly[i+1]
-        canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill = couleur, width=epaisseur)
-        if debug_points:
-            dessin_point(p1, 4, canvas, "green")
-            dessin_point(p2, 4, canvas, "green")
-
-    canvas.create_line(poly[-1].x, poly[-1].y, poly[0].x, poly[0].y, fill = couleur, width=epaisseur)
 
 def convertir_point(points_t):
     res=[]
@@ -535,16 +513,6 @@ def debug(data):
     global debug_logs
     if debug_logs:
         print(data)
-  
-def mouvement(event):
-    global debug_coords
-    if debug_coords:
-        x, y = event.x, event.y
-        print('{}, {}'.format(x, y))
-      
-def coord_souris(event):
-    x, y = event.x, event.y
-    print('{}, {}'.format(x, y))
 
 def coeff_droite(p1, p2):
     if p1.x == p2.x:
@@ -556,71 +524,36 @@ def coeff_droite(p1, p2):
 # renvoi (x,y(x))
 def point_droite(k, m, x):
     return Point(x, k*x + m)
-
-def affiner_poly(poly, precision):
-    res=[]
-    for i in range(-1,len(poly)-1):
-        p1=poly[i]
-        p2=poly[i+1]
-        x1=min(p1.x, p2.x)
-        x2=max(p1.x, p2.x)
-        points=[]
-        if x1==x2:
-            y1=min(p1.y, p2.y)
-            y2=max(p1.y, p2.y)
-            valy=np.linspace(y1, y2, num=precision)
-            for y in valy:
-                points.append(Point(x1, y))
-        else:    
-            k=coeff_droite(p1, p2)
-            valx=np.linspace(x1, x2, num=precision)
-            for x in valx:
-                points.append(point_droite(k, poly[i].y - k*poly[i].x, x))
-        if points[0].y != p1.y:
-            points=points[::-1]
-        if points[0].x != p1.x:
-            points=points[::-1]
-
-        print(p1.__str__(), p2.__str__())
-        print([p.__str__() for p in points])
-
-        res=res+points
-
-    return res
-
-def test_affinage(poly, e):
+    
+def dessin(data, interieur=None):
+    global Voronoi, Sommets, cvs, dessin_on
+    dessin_on = True
     root = Tk()
     root.title('VORONOI')
-    root.geometry("500x500")
-    canvas=Canvas(root, width=500, height=500, background="white")
-    canvas.grid(row = 0, column = 0)
-    
-    poly_con = convertir_point(poly)
-    dessin_poly(poly_con, canvas, "blue", 5)
-    poly_af = affiner_poly(poly_con, e)
-    dessin_poly(poly_af, canvas, "red", debug_points=True)
-    
-    root.bind('<Button 1>', coord_souris)
-    root.bind('<Motion>', mouvement)
-    root.mainloop()
+    root.geometry("1000x1000")
+    root.bind('<Escape>', lambda i: sys.exit(0))
+    cvs=Canvas(root, width=1000, height=1000, background="white")
+    cvs.grid(row = 0, column = 0)
 
+    if isinstance(data[0], tuple):
+        points = convertir_point(data)
+    else:
+        points=data
     
-def dessin(data):
-    global Voronoi, Sommets
-    root = Tk()
-    root.title('VORONOI')
-    root.geometry("500x500")
-    canvas=Canvas(root, width=500, height=500, background="white")
-    canvas.grid(row = 0, column = 0)
-
-    points = convertir_point(data)
+    dessin_poly(points, cvs)
+    
+    if interieur:
+        if isinstance(data[0], tuple):
+            inte_points=convertir_point(interieur)
+        else:
+            inte_points=interieur
+        dessin_poly(inte_points, cvs)
+        points=points+inte_points
     
     for point in points:
-        dessin_point(point, 5, canvas)
-    
-    dessin_poly(points, canvas)
+        dessin_point(point, 5, cvs)
         
-    fortunes(points, canvas)
+    fortunes(points, cvs)
     
     debug('Longueur résultat : ' + str(len(Voronoi)))
     
@@ -630,32 +563,38 @@ def dessin(data):
             if debug_logs:
                 debug(arete)
          
-    terminer_aretes()
+    #terminer_aretes()
     
     debug('Résultat après compression :')
     for arete in Voronoi:
         if arete:
+            if arete.fin==None:
+                print(arete.__str__())
             if debug_aretes:
-                dessin_arete(arete, canvas)
+                dessin_arete(arete, cvs)
             if debug_logs:
                 debug(arete)
             if debug_grap:
-                dessin_ori_arete(arete, canvas)
+                dessin_ori_arete(arete, cvs)
                 
     # Ce sont les points verts ceux de Voronoi
     for sommet in Sommets:
-        dessin_point(sommet, 8, canvas, couleur="green")
+        dessin_point(sommet, 8, cvs, couleur="green")
     
     root.bind('<Button 1>', coord_souris)
     root.bind('<Motion>', mouvement)
     root.mainloop()
+    
 
-poly1=[ (118, 121), (294, 57), (359, 240), (327, 376), (165, 408), (200, 279)]
-poly2=[(178, 130), (245, 77), (330, 124), (319, 250), (412, 321), (375, 394), (278, 398), (290, 333), (143, 334), (70, 282), (104, 203)]
-poly3=[(86, 206), (257, 102), (438, 210), (438, 402), (309, 364), (155, 450)]
 
-#dessin(poly2)
+#dessin(affiner_poly(read_from_file('voronoi_test/save.dat'), 30))
+#write_to_file('voronoi_test/export.dat', affiner_poly(read_from_file('voronoi_test/save.dat'), 1))
 #test_affinage(poly2, 5)
+
+# dessin(
+#     affiner_poly(convertir_point(poly7), 10), 
+#     interieur=affiner_poly(convertir_point(inte_poly7), 10)
+#     )
 
 # TODO:
 # - Tracer correctement les arêtes (pour l'esthétique)

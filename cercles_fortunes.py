@@ -2,6 +2,7 @@ from logging import raiseExceptions
 import math
 from fortunes import *
 from tkinter import *
+from Examples import *
 from numpy.linalg import norm
 import numpy as np
 import copy 
@@ -28,6 +29,10 @@ class Polygone:
         return res
 
     def dessin_poly(self, canvas, couleur="blue", epaisseur=2, debug_points=False, couleurs=False):
+        if couleurs:
+            self.dessin_champ(self.exterieur, canvas)
+            self.dessin_lac(self.interieur, canvas)
+            
         for i in range(-1, len(self.exterieur)-1):
             p1=self.exterieur[i]
             p2=self.exterieur[i+1]
@@ -47,11 +52,8 @@ class Polygone:
             p2=self.interieur[j+1]
             canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill = couleur, width=epaisseur)
             if debug_points:
-                p1.dessin_point(canvas, 4, 'cyan')
+                p1.dessin_point(canvas, 4, 'green')
                 
-        if couleurs:
-            self.dessin_champ(self.exterieur, canvas)
-            self.dessin_lac(self.interieur, canvas)
     
     def dessin_lac(self, lac, canvas):
         lac_tuple=[]
@@ -81,32 +83,35 @@ class Polygone:
         return Point(x, k*x + m)
 
     def affiner(self, data, precision):
-        res=[]
-        for i in range(-1,len(data)-1):
-            p1=data[i]
-            p2=data[i+1]
-            x1=min(p1.x, p2.x)
-            x2=max(p1.x, p2.x)
-            points=[]
-            if x1==x2:
-                y1=min(p1.y, p2.y)
-                y2=max(p1.y, p2.y)
-                valy=np.linspace(y1, y2, num=precision)
-                for y in valy:
-                    points.append(Point(x1, y))
-            else:    
-                k=self.coeff_droite(p1, p2)
-                valx=np.linspace(x1, x2, num=precision)
-                for x in valx:
-                    points.append(self.point_droite(k, data[i].y - k*data[i].x, x))
-            if points[0].y != p1.y:
-                points=points[::-1]
-            if points[0].x != p1.x:
-                points=points[::-1]
-            # print(p1.__str__(), p2.__str__())
-            # print([p.__str__() for p in points])
-            res=res+points
-        return res
+        if precision==1:
+            return data
+        else:
+            res=[]
+            for i in range(-1,len(data)-1):
+                p1=data[i]
+                p2=data[i+1]
+                x1=min(p1.x, p2.x)
+                x2=max(p1.x, p2.x)
+                points=[]
+                if x1==x2:
+                    y1=min(p1.y, p2.y)
+                    y2=max(p1.y, p2.y)
+                    valy=np.linspace(y1, y2, num=precision)
+                    for y in valy:
+                        points.append(Point(x1, y))
+                else:    
+                    k=self.coeff_droite(p1, p2)
+                    valx=np.linspace(x1, x2, num=precision)
+                    for x in valx:
+                        points.append(self.point_droite(k, data[i].y - k*data[i].x, x))
+                if points[0].y != p1.y:
+                    points=points[::-1]
+                if points[0].x != p1.x:
+                    points=points[::-1]
+                # print(p1.__str__(), p2.__str__())
+                # print([p.__str__() for p in points])
+                res=res+points
+            return res
             
     def affinage_exterieur(self, precision):
         self.exterieur=self.affiner(self.exterieur,precision)
@@ -291,10 +296,10 @@ def plot_centres(data, canvas, affinage=1):
 
     centre, rayon = trouve_min_cercle(poly.get_points(), centres)
 
-    poly.dessin_poly(canvas, 'black', 4, debug_points=False, couleurs=False)
+    poly.dessin_poly(canvas, 'black', 4, debug_points=False, couleurs=True)
 
     for c in centres:
-        dessin_point(c, 2, canvas, 'blue')
+        dessin_point(c, 4, canvas, 'blue')
         
     dessin_point(centre, 4, canvas, 'green')
     dessin_cercle(centre, rayon, canvas, couleur='green', epaisseur=4)
@@ -312,26 +317,7 @@ def show_tk(tk):
     tk.bind("<Button-3>", getDistance)
     tk.bind('<Motion>', mouvement)
     tk.mainloop()
-    
-poly_c1=Polygone(
-    [(89, 188), (147, 108), (228, 64), (291, 85), (354, 131), (453, 313), (296, 300), (240, 402), (159, 249)],
-    [(238, 145), (276, 144), (312, 178), (343, 244), (226, 248)]
-)
 
-poly_c2=Polygone(
-    [(143, 363), (52, 276), (112, 241), (146, 271), (181, 268), (202, 238), (184, 204), (84, 199), (83, 169), (108, 117), (186, 131), (219, 126), (220, 92), (183, 49), (239, 15), (304, 32), (429, 164), (442, 212), (430, 219), (371, 225), (358, 277), (448, 314), (459, 335), (453, 374), (430, 416), (362, 433), (289, 438), (282, 402), (323, 349), (286, 328), (248, 328), (214, 377), (190, 428), (154, 449), (130, 442)],
-    [(343, 127), (311, 114), (273, 119), (250, 135), (235, 162), (245, 178), (255, 197), (258, 211), (261, 235), (273, 265), (289, 290), (313, 310), (341, 323), (358, 330), (354, 362), (353, 381), (374, 386), (388, 368), (387, 326), (370, 313), (342, 294), (334, 279), (327, 250)]
-)
-poly_c3=Polygone(
-    [(183, 42), (164, 44), (147, 55), (135, 77), (127, 106), (121, 122), (108, 127), (90, 132), (73, 142), (68, 155), (65, 174), (68, 197), (80, 211), (97, 216), (112, 222), (128, 241), (128, 257), (123, 270), (106, 282), (95, 291), (93, 321), (101, 348), (113, 352), (129, 360), (155, 371), (163, 389), (167, 407), (179, 423), (203, 427), (229, 428), (250, 421), (263, 415), (279, 411), (304, 411), (323, 419), (350, 427), (375, 430), (405, 430), (420, 430), (433, 424), (441, 416), (452, 401), (455, 379), (455, 360), (455, 345), (450, 336), (433, 334), (416, 335), (402, 350), (380, 366), (365, 355), (363, 338), (384, 315), (411, 306), (423, 302), (433, 290), (441, 264), (449, 247), (457, 217), (457, 184), (457, 155), (437, 139), (408, 139), (390, 148), (380, 167), (362, 189), (337, 216), (322, 219), (302, 220), (296, 201), (314, 181), (336, 181), (349, 173), (357, 156), (368, 143), (382, 130), (400, 116), (417, 83), (424, 64), (421, 47), (402, 27), (371, 15), (353, 15), (308, 18), (291, 20), (290, 33), (275, 50), (262, 56), (254, 47), (244, 33)],
-    [(311, 263), (299, 265), (277, 261), (269, 249), (266, 235), (253, 234), (235, 235), (231, 241), (228, 257), (228, 269), (228, 294), (243, 299), (270, 305), (273, 312), (273, 322), (270, 339), (262, 340), (247, 341), (242, 350), (242, 365), (254, 382), (284, 391), (316, 391), (332, 392), (334, 379), (335, 364), (326, 344), (324, 323), (331, 297), (378, 283), (401, 261), (418, 228), (414, 211), (394, 210), (373, 222)]
-)
-
-poly_c4=Polygone(
-    [(170, 155), (505, 68), (583, 174), (622, 250), (685, 277), (682, 396), (649, 558), (538, 596), (343, 715), (227, 629), (107, 630), (84, 532), (294, 488), (367, 450), (355, 412), (296, 386), (209, 384), (117, 348), (214, 293), (269, 265), (271, 241), (257, 211), (188, 207), (120, 234)],
-    [(502, 175), (473, 158), (404, 152), (359, 160), (318, 153), (268, 163), (279, 179), (303, 192), (327, 216), (327, 251), (316, 275), (335, 288), (358, 308), (361, 336), (385, 336), (447, 323), (511, 323), (536, 331), (561, 327), (563, 308), (536, 297), (494, 289), (470, 277), (473, 249), (516, 234), (547, 224)]
-)
-
-tk, canvas = init_tk_canvas(900, 900)
-plot_centres(poly_c4, canvas)
+tk, canvas = init_tk_canvas(1000, 1000)
+plot_centres(poly_c5, canvas, 4)
 show_tk(tk)

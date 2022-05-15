@@ -1,131 +1,129 @@
-# coding=utf-8
-# Types des données
-class Point:
+class Point: 
     def __init__(self, x, y):
         self.x=x
         self.y=y
 
-class Sommet:
-    def __init__(self, x, y):
-        self.x=x
-        self.y=y
-        self.areteIncidente # une arrete qui a pour origine ce sommet
+    def dessin_point(self, canvas, taille, couleur = "red"):
+        canvas.create_oval(self.x - taille, 
+                            self.y - taille, 
+                            self.x + taille, 
+                            self.y + taille, 
+                            fill = couleur)
+    def __str__(self):
+        return "(x={x}, y={y})".format(x = self.x, y = self.y)
 
-class Arete: # en realite une demi-arrete de p1 vers p2
-    def __init__(self, p1, p2):
-        self.precedent = None # l'arete précédente dans le chainage arrivant à p1
-        self.jumelle = None # arete qui va de p2 vers p1 paralle, dans le sens inverse
-        self.suivant = None # arete suivante dans le chainage partant de p2
-        self.face = None # face à la droite de l'arrête
-
-    def getDestination(self):
-        return self.suivant
+class Polygone:
+    exterieur=[]
+    interieur=[]
+    obstacles=[]
+    def __init__(self, points, interieur=[], obstacles=[]):
+        self.exterieur=self.convertir_point(points)
+        self.interieur=self.convertir_point(interieur)
+        self.obstacles=self.convertir_point(obstacles)
     
-    def getOrigine(self):
-        return self.precedent
+    def convertir_point(self, data):
+        res=[]
+        for p in data:
+            res.append(Point(p[0], p[1]))
+        return res
 
-class Face:
-    def __init__(self):
-        self.arrete=None
+    def dessin_poly(self, canvas, couleur="blue", epaisseur=2, debug_points=False, couleurs=False):
+        if couleurs:
+            self.dessin_champ(self.exterieur, canvas)
+            self.dessin_lac(self.interieur, canvas)
+            
+        for i in range(-1, len(self.exterieur)-1):
+            p1=self.exterieur[i]
+            p2=self.exterieur[i+1]
+            canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill = couleur, width=epaisseur)
+            if debug_points:
+                p1.dessin_point(canvas, 4, 'green')
 
-class PolygoneSimple:
-    # liste de points dans l'ordre de construction du polygone (le dernier rejoint le premier)
-    # liste de la forme [(x,y),...,(x,y)]
-    def __init__(self, points):
-        self.points = []
-        for pt in points:
-            self.points.append(Point(pt[0], pt[1]))
-        self.points.append(self.points[0]) # on ajoute le premier point pour fermer le polygone
-
-    def extrait_coord(self):
-        y_coord=[]
-        x_coord=[]
-        for pt in self.points:
-            x_coord.append(pt.x)
-            y_coord.append(pt.y)
-        return (x_coord,y_coord)
+        for j in range(-1,len(self.interieur)-1):
+            p1=self.interieur[j]
+            p2=self.interieur[j+1]
+            canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill = couleur, width=epaisseur)
+            if debug_points:
+                p1.dessin_point(canvas, 4, 'green')
+                
+    
+    def dessin_lac(self, lac, canvas):
+        lac_tuple=[]
+        for p in lac:
+            lac_tuple.append(p.x)
+            lac_tuple.append(p.y)
+        lac_tuple=tuple(lac_tuple)
+        canvas.create_polygon(lac_tuple, fill="blue")
         
-class Noeud:        
-    def __init__(self, val):
-        self.racine=val
-        self.parent=None
-        self.gauche=None
-        self.droite=None
-    
-    def add_gauche(self, val):
-        if self.gauche==None:
-            self.gauche=Noeud(val)
+    def dessin_champ(self, champ, canvas):
+        champ_tuple=[]
+        for p in champ:
+            champ_tuple.append(p.x)
+            champ_tuple.append(p.y)
+        champ_tuple=tuple(champ_tuple)
+        canvas.create_polygon(champ_tuple, fill="#F8E994")
+        
+    def coeff_droite(self, p1, p2):
+        if p1.x == p2.x:
+            return 0
         else:
-            perm_arbre=Noeud(val)
-            perm_arbre.add_gauche(self.gauche)
-            self.gauche=perm_arbre
+            return (p2.y-p1.y)/(p2.x-p1.x)
 
-    def add_droite(self, val):
-        if self.droite==None:
-            self.droite=Noeud(val)
+    # droite y=kx+m 
+    # renvoi (x,y(x))
+    def point_droite(self, k, m, x):
+        return Point(x, k*x + m)
+
+    def affiner(self, data, precision):
+        if precision==1:
+            return data
         else:
-            perm_arbre=Noeud(val)
-            perm_arbre.add_gauche(self.droite)
-            self.droite=perm_arbre
+            res=[]
+            for i in range(-1,len(data)-1):
+                p1=data[i]
+                p2=data[i+1]
+                x1=min(p1.x, p2.x)
+                x2=max(p1.x, p2.x)
+                points=[]
+                if x1==x2:
+                    y1=min(p1.y, p2.y)
+                    y2=max(p1.y, p2.y)
+                    valy=np.linspace(y1, y2, num=precision)
+                    for y in valy:
+                        points.append(Point(x1, y))
+                else:    
+                    k=self.coeff_droite(p1, p2)
+                    valx=np.linspace(x1, x2, num=precision)
+                    for x in valx:
+                        points.append(self.point_droite(k, data[i].y - k*data[i].x, x))
+                if points[0].y != p1.y:
+                    points=points[::-1]
+                if points[0].x != p1.x:
+                    points=points[::-1]
+                    
+                res=res+points
+            return res
+            
+    def affinage_exterieur(self, precision):
+        self.exterieur=self.affiner(self.exterieur,precision)
 
-class Pile:
-    def __init__(self):
-        self.vider_pile()
+    def affinage_interieur(self, precision):
+        self.interieur=self.affiner(self.interieur,precision)
 
-    def test_vide(self):
-        return self.pile==[]
+    def get_points(self):
+        return self.interieur + self.exterieur
+    
+    def getExterieur(self):
+        return self.exterieur
 
-    def vider_pile(self):
-        self.pile=[]
+    def getInterieur(self):
+        return self.interieur
     
-    def empiler(self, val):
-        self.pile.append(val)
-    
-    def depiler(self):
-        if self.test_vide():
-            return None
-        else:
-            return self.pile.pop()
-    
-    def taille_pile(self):
-        return len(self.pile)
+    def getObstacles(self):
+        return self.obstacles
 
-class SiteEvent:
-    def __init__(self, point):
-        self.point=point
-        self.priority=self.point.y # Les événements sont triés selon leur y croissants (voir defilement de la ligne sweep)
-    
-class QueueEvenements:
-    def __init__(self):
-        self.queue=Pile()
-    
-    def add_evenement(self, evenement):
-        temp_pile=Pile()
-        i=self.queue.taille_pile()
-        # On ajoute les evenements selon leur y croissants
-        while i>0:
-            el=self.queue.depiler()
-            temp_pile.empiler(el)
-            # lorsqu'on trouve le y tel que notre evenement ait une priorite juste superieure, on l'ajoute
-            if el.priority<evenement.priority:
-                for i in range(temp_pile.taille_pile-1):
-                    val=temp_pile.depiler()
-                    self.queue.empiler(val)
-                break
-            i=(i-1)
-        self.queue.empiler(evenement)
-    
-    def get_evenement(self):
-        return self.queue.depiler()
-
-    def initialiser_sommets(self, sommets):
-        # On ajoute tous les sommets
-        # sommets_tries=sorted(sommets, key=lambda sommet: sommet.y)
-        for sommet in sommets:
-            self.add_evenement(sommet)
-
-class ArbreSommets:
-    # sommet represente le premier sommet que l'on va ajouter dans l'arbre 
-    # i.e le premier sommet de la liste selon y
-    def __init__(self, sommet): 
-        self.arbre=Noeud(sommet)
+    def print_points(self):
+        res=''
+        for p in (self.interieur + self.exterieur):
+            res=res+'('+str(p.x)+','+str(p.y)+')'
+        print(res)

@@ -1,12 +1,19 @@
 import geopandas
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.linalg import norm
 from logging import raiseExceptions
 import math
 from fortunes import *
-from numpy.linalg import norm
+from TkinterUtils import *
+from PolygonUtils import *
+from Structures import *
+from cercles_poles import cercle_interieur
 import copy 
 import itertools
+import time
+
+
 
 EPS = .000001
 counter = 0
@@ -14,116 +21,8 @@ x0 = 0
 x1 = 0
 y0 = 0
 y1 = 0
-
-
-class Polygone:
-    exterieur=[]
-    interieur=[]
-    def __init__(self, points, interieur=[]):
-        self.exterieur=self.convertir_point(points)
-        self.interieur=self.convertir_point(interieur)
-    
-    def convertir_point(self, data):
-        res=[]
-        for p in data:
-            res.append(Point(p[0], p[1]))
-        return res
-
-    def dessin_poly(self, canvas, couleur="blue", epaisseur=2, debug_points=False, couleurs=False):
-        for i in range(-1, len(self.exterieur)-1):
-            p1=self.exterieur[i]
-            p2=self.exterieur[i+1]
-            canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill = couleur, width=epaisseur)
-            if debug_points:
-                p1.dessin_point(canvas, 4, 'green')
-
-        # canvas.create_line(
-        #     self.exterieur[-1].x, 
-        #     self.exterieur[-1].y, 
-        #     self.exterieur[0].x, 
-        #     self.exterieur[0].y, 
-        #     fill = couleur, width=epaisseur)
-
-        for j in range(-1,len(self.interieur)-1):
-            p1=self.interieur[j]
-            p2=self.interieur[j+1]
-            canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill = couleur, width=epaisseur)
-            if debug_points:
-                p1.dessin_point(canvas, 4, 'cyan')
-                
-        if couleurs:
-            self.dessin_champ(self.exterieur, canvas)
-            self.dessin_lac(self.interieur, canvas)
-    
-    def dessin_lac(self, lac, canvas):
-        lac_tuple=[]
-        for p in lac:
-            lac_tuple.append(p.x)
-            lac_tuple.append(p.y)
-        lac_tuple=tuple(lac_tuple)
-        canvas.create_polygon(lac_tuple, fill="blue")
-        
-    def dessin_champ(self, champ, canvas):
-        champ_tuple=[]
-        for p in champ:
-            champ_tuple.append(p.x)
-            champ_tuple.append(p.y)
-        champ_tuple=tuple(champ_tuple)
-        canvas.create_polygon(champ_tuple, fill="#F8E994")
-        
-    def coeff_droite(self, p1, p2):
-        if p1.x == p2.x:
-            return 0
-        else:
-            return (p2.y-p1.y)/(p2.x-p1.x)
-
-    # droite y=kx+m 
-    # renvoi (x,y(x))
-    def point_droite(self, k, m, x):
-        return Point(x, k*x + m)
-
-    def affiner(self, data, precision):
-        res=[]
-        for i in range(-1,len(data)-1):
-            p1=data[i]
-            p2=data[i+1]
-            x1=min(p1.x, p2.x)
-            x2=max(p1.x, p2.x)
-            points=[]
-            if x1==x2:
-                y1=min(p1.y, p2.y)
-                y2=max(p1.y, p2.y)
-                valy=np.linspace(y1, y2, num=precision)
-                for y in valy:
-                    points.append(Point(x1, y))
-            else:    
-                k=self.coeff_droite(p1, p2)
-                valx=np.linspace(x1, x2, num=precision)
-                for x in valx:
-                    points.append(self.point_droite(k, data[i].y - k*data[i].x, x))
-            if points[0].y != p1.y:
-                points=points[::-1]
-            if points[0].x != p1.x:
-                points=points[::-1]
-            # print(p1.__str__(), p2.__str__())
-            # print([p.__str__() for p in points])
-            res=res+points
-        return res
-            
-    def affinage_exterieur(self, precision):
-        self.exterieur=self.affiner(self.exterieur,precision)
-
-    def affinage_interieur(self, precision):
-        self.interieur=self.affiner(self.interieur,precision)
-
-    def get_points(self):
-        return self.interieur + self.exterieur
-
-    def print_points(self):
-        res=''
-        for p in (self.interieur + self.exterieur):
-            res=res+'('+str(p.x)+','+str(p.y)+')'
-        print(res)
+k=100
+e=0.01
 
 # Ray Casting 2
 def interieur_test2(point, poly):
@@ -193,7 +92,8 @@ def minDistance(p1, p2, p) :
         x2 = AE[0]
         y2 = AE[1]
         mod = math.sqrt(x1 * x1 + y1 * y1)
-        r = abs(x1 * y2 - y1 * x2) / mod
+        if mod>0:
+            r = abs(x1 * y2 - y1 * x2) / mod
 
     return r
  
@@ -213,11 +113,11 @@ def min_distance_obstacles(point, obs):
             rmin=r
     return rmin  
        
-def trouve_min_cercle(poly, centres, obstacles):    
+def trouve_min_cercle_fortunes(poly, centres, obstacles):    
     
     rmax=0
     candidat=None
-    print('Nombres de centres trouvés:', len(centres))
+    #print('Nombres de centres trouvés:', len(centres))
 
     for c in centres:
         if interieur_test2(c, poly):
@@ -233,23 +133,23 @@ def trouve_min_cercle(poly, centres, obstacles):
                 candidat=c
                 rmax=r
     
-    print(candidat, rmax)
+    #print(candidat, rmax)
     return candidat, rmax
 
 def print_obstacles(obstacles, ax):
     for o in obstacles:
-        dessin_point(Point(o[0], o[1]), ax, 3, 'red')
+        dessin_point_matplotlib(Point(o[0], o[1]), ax, 3, 'red')
         
-def dessin_point(p, ax, size=4, couleur="green"):
+def dessin_point_matplotlib(p, ax, size=4, couleur="green"):
     ax.plot(p.x, p.y, marker="o", markersize=size, markerfacecolor=couleur)
  
-def dessin_cercle(centre, rayon, ax, couleur="green"):
+def dessin_cercle_matplotlib(centre, rayon, ax, couleur="green"):
     cir=plt.Circle((centre.x, centre.y), rayon, color=couleur, fill=False)
     ax.add_patch(cir)
 
 # type == 1 => on calcule la distance aux obstacles après avoir calculé Fortunes avec la polygone
 # type == 2 => on calcule Fortune avec les points obstacles
-def plot_centres(data, ax, xmax, ymax, obstacles=None, type=1, affinage=1):
+def plot_centres_fortunes(data, ax, xmax, ymax, obstacles=None, type=1, affinage=1):
 
     poly=copy.deepcopy(data)
     poly.affinage_exterieur(affinage)
@@ -263,22 +163,26 @@ def plot_centres(data, ax, xmax, ymax, obstacles=None, type=1, affinage=1):
     else:
         centres=fortunes(poly.get_points(), xmax, ymax)
 
-    centre, rayon = trouve_min_cercle(poly.get_points(), centres, obstacles)
+    centre, rayon = trouve_min_cercle_fortunes(poly.get_points(), centres, obstacles)
     
     if centre==None:
         return 
     
-    #poly.dessin_poly(canvas, 'black', 4, debug_points=False, couleurs=False)
-    # for c in centres:
-    #     dessin_point(c, ax, 2, 'blue')
-        
-    #print_obstacles(obstacles, ax)
-    dessin_point(centre, ax, 4, 'green')
-    dessin_cercle(centre, rayon, ax, couleur='green')
+    dessin_point_matplotlib(centre, ax, 4, 'green')
+    dessin_cercle_matplotlib(centre, rayon, ax, couleur='green')
+    
+    
+def trouve_min_cercle_poles(data, obstacles, ax, affinage=1):
+    global k, e
+    centre, rayon = cercle_interieur(data, [], k, e, obstacles=obstacles)
+    dessin_point_matplotlib(centre, ax, 4, 'green')
+    dessin_cercle_matplotlib(centre, rayon, ax, couleur='green')
+    #print('Centre : '  + str(centre))
+    
 
-x_zoom=[190000, 240000]
-y_zoom=[6775000, 6815000]
-# x_zoom=[200000, 300000]
+x_zoom=[100000, 420000]
+y_zoom=[6675000, 6975000]
+# x_zoom=[190000, 270000]
 # y_zoom=[6750000, 6800000]
 
 zones_sensibles_file='donneegeo/Zonages_preservation_OBPNB_GIPBE/Zonages_preservation_OBPNB_GIPBE.shx'
@@ -305,7 +209,7 @@ def get_poly_in_perimeter(data, prec):
             count+=1
             res.append(poly.exterior.coords[::prec])
             #res.append([ (x-x_zoom[0], y-y_zoom[0]) for (x,y) in poly.exterior.coords[::20] ])
-    print(count)
+    #print(count)
     return res
 
 def get_all_points_in_perimeter(data, prec):
@@ -316,24 +220,32 @@ def get_all_points_in_perimeter(data, prec):
     return res
 
 
-def plot_zoom(file_obstacles, file_frontieres, x_zoom, y_zoom):
+def plot_zoom(file_obstacles, file_frontieres, x_zoom, y_zoom, type="fortunes"):
     geom=geopandas.read_file(file_obstacles)
     bassins=geopandas.read_file(file_frontieres)
+    start_time = time.time()
 
     ax = geom.plot()
     bassins.boundary.plot(ax=ax)
 
-    ax.set_xlim(x_zoom[0], x_zoom[1])
-    ax.set_ylim(y_zoom[0], y_zoom[1])
+    #ax.set_xlim(x_zoom[0], x_zoom[1])
+    #ax.set_ylim(y_zoom[0], y_zoom[1])
 
     coords = list(geom.geometry[1].exterior.coords)
     #poly_in_perimeter1 = get_poly_in_perimeter(geom.geometry.to_list(), 90)
-    poly_in_perimeter2 = get_poly_in_perimeter(bassins.geometry.to_list(), 20)
-    obstacles_points=get_all_points_in_perimeter(geom.geometry.to_list(), 20)
-    print(len(geom.geometry.to_list()), len(obstacles_points))
+    poly_in_perimeter2 = get_poly_in_perimeter(bassins.geometry.to_list(), 50)
+    obstacles_points = get_all_points_in_perimeter(geom.geometry.to_list(), 200)
+    print('Nombre de points : ' + str(sum([ len(p) for p in poly_in_perimeter2]) + len(obstacles_points)) 
+          + ' / ' 
+          + 'Nombre d\'obstacles : ' + str(len(obstacles_points)))
 
     for poly in poly_in_perimeter2:
-        plot_centres(Polygone(poly), ax, x_zoom[1], y_zoom[1], obstacles_points, type=1)
+        if type=="fortunes": 
+            plot_centres_fortunes(Polygone(poly), ax, x_zoom[1], y_zoom[1], obstacles_points, type=1)
+        if type=="poles":
+            trouve_min_cercle_poles(Polygone(poly).getExterieur(), convertir_point(obstacles_points), ax)
+    
+    print("--- %s seconds ---" % (time.time() - start_time))
         
     plt.show()
     
@@ -346,5 +258,5 @@ def plot_all(file1, file2):
         
     plt.show()
 
-plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom)
+plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom, type="fortunes")
 #plot_all(zones_sensibles_file, bassins_file)

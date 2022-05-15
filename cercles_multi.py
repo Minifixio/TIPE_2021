@@ -238,7 +238,7 @@ XX = [0,2,1]
 YY = [0,0.5,1]
 coords=convertir_coord(XX,YY)
 #centre, rayon=centre_multiple(X1,Y1,5000,0.0001)
-centre, rayon, s = centre_multiple(XX,YY,1000,1000,3,0.001)
+centre, rayon, s = centre_multiple(XX,YY,100,100,2,0.001)
 visu = Visualisation(coords)
 for i in range(len(centre)):
     visu.add_point(centre[i][0],centre[i][1])
