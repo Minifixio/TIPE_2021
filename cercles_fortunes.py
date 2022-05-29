@@ -3,8 +3,8 @@ import math
 from fortunes import *
 from tkinter import *
 from Examples import *
-from numpy.linalg import norm
 import numpy as np
+from numpy.linalg import norm
 import copy 
 
 EPS = .000001
@@ -291,10 +291,11 @@ def plot_centres(data, canvas, affinage=1):
 
     poly=copy.deepcopy(data)
     poly.affinage_exterieur(affinage)
-    poly.affinage_interieur(affinage)
+    #poly.affinage_interieur(affinage)
     centres=fortunes(poly.get_points(), canvas)
 
     centre, rayon = trouve_min_cercle(poly.get_points(), centres)
+    print(centre, rayon)
 
     poly.dessin_poly(canvas, 'black', 4, debug_points=False, couleurs=True)
 
@@ -319,5 +320,5 @@ def show_tk(tk):
     tk.mainloop()
 
 tk, canvas = init_tk_canvas(1000, 1000)
-plot_centres(poly_c5, canvas, 4)
+plot_centres(poly_c7, canvas, 10)
 show_tk(tk)

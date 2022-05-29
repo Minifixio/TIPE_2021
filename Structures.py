@@ -1,3 +1,5 @@
+import numpy as np
+
 class Point: 
     def __init__(self, x, y):
         self.x=x
@@ -12,6 +14,24 @@ class Point:
     def __str__(self):
         return "(x={x}, y={y})".format(x = self.x, y = self.y)
 
+
+class PolygoneSimple:
+    # liste de points dans l'ordre de construction du polygone (le dernier rejoint le premier)
+    # liste de la forme [(x,y),...,(x,y)]
+    def __init__(self, points):
+        self.points = []
+        for pt in points:
+            self.points.append(Point(pt[0], pt[1]))
+        self.points.append(self.points[0]) # on ajoute le premier point pour fermer le polygone
+
+    def extrait_coord(self):
+        y_coord=[]
+        x_coord=[]
+        for pt in self.points:
+            x_coord.append(pt.x)
+            y_coord.append(pt.y)
+        return (x_coord,y_coord)
+    
 class Polygone:
     exterieur=[]
     interieur=[]

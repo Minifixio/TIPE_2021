@@ -66,3 +66,23 @@ def affiner_poly(poly, precision):
         res=res+points
 
     return res
+
+def draw_polygon(data, canvas):
+    print("Drawing polygon")
+    if isinstance(data[0], Point):
+        for i in range(-1, len(data)-1):
+            p1=data[i]
+            p2=data[i+1]
+            canvas.create_oval(p1.x-2, p1.y-2, p1.x+2, p1.y+2, fill="black")
+            canvas.create_oval(p2.x-2, p2.y-2, p2.x+2, p2.y+2, fill="black")
+            canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill = "red", width=4)
+    else:
+        for i in range(len(data)-1):
+            x1=data[i][0]
+            y1=data[i][1]
+            x2=data[i+1][0]
+            y2=data[i+1][1]
+            canvas.create_line(x1,y1,x2,y2, fill="blue", width=4)
+            canvas.create_oval(x1-2, y1-2, x1+2, y1+2, fill="black")
+            canvas.create_oval(x2-2, y2-2, x2+2, y2+2, fill="black")
+        canvas.create_line(data[-1][0], data[-1][1], data[0][0], data[0][1], fill="blue", width=4)

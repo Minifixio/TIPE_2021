@@ -21,8 +21,8 @@ x0 = 0
 x1 = 0
 y0 = 0
 y1 = 0
-k=100
-e=0.01
+k=10
+e=1
 
 # Ray Casting 2
 def interieur_test2(point, poly):
@@ -182,8 +182,8 @@ def trouve_min_cercle_poles(data, obstacles, ax, affinage=1):
 
 x_zoom=[100000, 420000]
 y_zoom=[6675000, 6975000]
-# x_zoom=[190000, 270000]
-# y_zoom=[6750000, 6800000]
+#x_zoom=[190000, 270000]
+#y_zoom=[6750000, 6800000]
 
 zones_sensibles_file='donneegeo/Zonages_preservation_OBPNB_GIPBE/Zonages_preservation_OBPNB_GIPBE.shx'
 bassins_file='donneegeo/bassin_versant/bassin_versant.shx'
@@ -226,15 +226,15 @@ def plot_zoom(file_obstacles, file_frontieres, x_zoom, y_zoom, type="fortunes"):
     start_time = time.time()
 
     ax = geom.plot()
-    bassins.boundary.plot(ax=ax)
+    bassins.boundary.plot(ax=ax, color="black")
 
-    #ax.set_xlim(x_zoom[0], x_zoom[1])
-    #ax.set_ylim(y_zoom[0], y_zoom[1])
+    ax.set_xlim(x_zoom[0], x_zoom[1])
+    ax.set_ylim(y_zoom[0], y_zoom[1])
 
     coords = list(geom.geometry[1].exterior.coords)
     #poly_in_perimeter1 = get_poly_in_perimeter(geom.geometry.to_list(), 90)
     poly_in_perimeter2 = get_poly_in_perimeter(bassins.geometry.to_list(), 50)
-    obstacles_points = get_all_points_in_perimeter(geom.geometry.to_list(), 200)
+    obstacles_points = get_all_points_in_perimeter(geom.geometry.to_list(), 50)
     print('Nombre de points : ' + str(sum([ len(p) for p in poly_in_perimeter2]) + len(obstacles_points)) 
           + ' / ' 
           + 'Nombre d\'obstacles : ' + str(len(obstacles_points)))
@@ -254,9 +254,9 @@ def plot_all(file1, file2):
     bassins=geopandas.read_file(file2)
 
     ax = geom.plot()
-    bassins.boundary.plot(ax=ax)
+    bassins.boundary.plot(ax=ax, color="black")
         
     plt.show()
 
-plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom, type="fortunes")
+plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom, type="poles")
 #plot_all(zones_sensibles_file, bassins_file)

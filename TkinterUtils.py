@@ -38,10 +38,8 @@ def dessin_poly(poly, canvas, couleur="blue", epaisseur=2, debug_points=False):
     canvas.create_line(poly[-1].x, poly[-1].y, poly[0].x, poly[0].y, fill = couleur, width=epaisseur)
 
 def mouvement(event):
-    global debug_coords
-    if debug_coords:
-        x, y = event.x, event.y
-        print('{}, {}'.format(x, y))
+    x, y = event.x, event.y
+    print('{}, {}'.format(x, y))
       
 def coord_souris(event):
     x, y = event.x, event.y

@@ -75,7 +75,10 @@ def cercle_interieur(ext, inte, k, e, obstacles=None, canvas=None, visu_state=Fa
                 for i in range(-1,ne-1):
                     x1,y1 = ext[i].x, ext[i].y
                     x2,y2 = ext[i+1].x, ext[i+1].y
-                    m = (y2-y1)/(x2-x1)
+                    if x2!=x1:
+                        m = (y2-y1)/(x2-x1)
+                    else:
+                        m=0
                     p = y1 - m*x1
                     if m != 0:
                         x3 = m*(y1 + (x1/m) + m*x - y)/(m**2 +1)
@@ -150,6 +153,7 @@ def init_tk_canvas(width, height):
     tk = Tk()
     tk.title('VORONOI')
     tk.geometry(str(width) + "x" + str(height))
+    
     canvas=Canvas(tk, width=width, height=height, background="white")
     canvas.grid(row = 0, column = 0)
     return tk, canvas

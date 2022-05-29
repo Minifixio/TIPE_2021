@@ -355,8 +355,8 @@ def creer_cercle_evnt(parabole):
     
     # Le centre du cercle est à l'intersecion des arêtes de la parabole traitéee (à vérifier...)
     centre_cercle = intersection_aretes(parabole.ar_gauche, parabole.ar_droite)
-    #if centre_cercle==None or parabole.site==None: return
-    rayon = math.sqrt((centre_cercle.x - parabole.site.x) ** 2 + (centre_cercle.y - parabole.site.y) ** 2)
+    if centre_cercle==None or parabole.site==None: return
+    else : rayon = math.sqrt((centre_cercle.x - parabole.site.x) ** 2 + (centre_cercle.y - parabole.site.y) ** 2)
     
     if debug_grap and dessin_on:
         cvs.create_oval(centre_cercle.x - rayon,
