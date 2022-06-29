@@ -4,6 +4,7 @@ import random
 from PIL import ImageTk
 import PolygonUtils as polyutils
 import Examples as examples
+import copy 
 
 x, y = None, None
 poly = []
@@ -121,58 +122,73 @@ def centre_multiple(X,Y,n1,n2,k,e):
     centres_max = [(X[0],Y[0])]*k
     rayons_max = [0]*k
     smax = 0
+    ne = len(X)
+    xmin = min(X)
+    xmax = max(X)
+    ymin = min(Y)
+    ymax = max(Y)
     for i in range(n1):
-        Tx = [X]
-        Ty = [Y]
-        for s in range(k-1):
-            j = random.randrange(s+1)
-            m = len(Tx[j])
-            i1 = random.randrange(m)
-            i2 = random.randrange(m)
-            while i2 == i1:
-                i2 = random.randrange(m)
-            i1, i2 = min(i1, i2), max(i1, i2)
-            t1 = random.uniform(0,1)
-            t2 = random.uniform(0,1)
-            x1 = t1*Tx[j][i1] + (1-t1)*Tx[j][i1-1]
-            y1 = t1*Ty[j][i1] + (1-t1)*Ty[j][i1-1]
-            x2 = t2*Tx[j][i2] + (1-t2)*Tx[j][i2-1]
-            y2 = t2*Ty[j][i2] + (1-t2)*Ty[j][i2-1]
-            X1 = [x1]
-            Y1 = [y1]
-            for d in range(i1,i2):
-                X1.append(Tx[j][d])
-                Y1.append(Ty[j][d])
-            X1.append(x2)
-            Y1.append(y2)
-            X2 = [x2]
-            Y2 = [y2]
-            for d in range(i2,m):
-                X2.append(Tx[j][d])
-                Y2.append(Ty[j][d])
-            for d in range(i1):
-                X2.append(Tx[j][d])
-                Y2.append(Ty[j][d])
-            X2.append(x1)
-            Y2.append(y1)
-            del Tx[j]
-            Tx.append(X1)
-            Tx.append(X2)
-            del Ty[j]
-            Ty.append(Y1)
-            Ty.append(Y2)
-        centres_intermediaires = []
-        ray_intermediaires = []
-        som = 0
-        for d in range(k):
-            centre, ray = cercle2(Tx[d],Ty[d],n2,e)
+        x = random.uniform(xmin,xmax)
+        y = random.uniform(ymin,ymax)
+        c = 0
+        for i in range(-1,ne-1):
+                p = pos(y,Y[i],Y[i+1])
+                if x <= X[i+1] + (y - Y[i+1])*(X[i]-X[i+1])/(Y[i]-Y[i+1]):
+                    c = (c+p)%2
+        if c == 1:
+            l = []
+            for i in range(k):
+                l.append([random.randrange(ne),random.uniform(0,1)])
+            l = sorted(l)
+            for i in range(k):
+                l[i][1] = 1 - l[i][1]
+            """Px = []
+            Py = []"""
+            centres_intermediaires = []
+            ray_intermediaires = []
+            som = 0
+            for i in range(k-1):
+                Xi = []
+                Yi = []
+                for j in range(l[i][0]+1,l[i+1][0]+1):
+                    Xi.append(X[j])
+                    Yi.append(Y[j])
+                t = l[i+1][1]
+                Xi.append(t*X[l[i+1][0]] + (1-t)*X[(l[i+1][0] + 1)%ne])
+                Yi.append(t*Y[l[i+1][0]] + (1-t)*Y[(l[i+1][0] + 1)%ne])
+                Xi.append(x)
+                Yi.append(y)
+                t = l[i][1]
+                Xi.append(t*X[l[i][0]] + (1-t)*X[(l[i][0] + 1)%ne])
+                Yi.append(t*Y[l[i][0]] + (1-t)*Y[(l[i][0] + 1)%ne])
+                centre, ray = cercle2(Xi,Yi,n2,e)
+                centres_intermediaires.append(centre)
+                ray_intermediaires.append(ray)
+                som += ray
+            Xi = []
+            Yi = []
+            for j in range(l[-1][0] + 1,ne):
+                Xi.append(X[j])
+                Yi.append(Y[j])
+            for j in range(l[0][0] + 1):
+                Xi.append(X[j])
+                Yi.append(Y[j])
+            t = l[0][1]
+            Xi.append(t*X[l[0][0]] + (1-t)*X[(l[0][0] + 1)%ne])
+            Yi.append(t*Y[l[0][0]] + (1-t)*Y[(l[0][0] + 1)%ne])
+            Xi.append(x)
+            Yi.append(y)
+            t = l[-1][1]
+            Xi.append(t*X[l[-1][0]] + (1-t)*X[(l[-1][0] + 1)%ne])
+            Yi.append(t*Y[l[-1][0]] + (1-t)*Y[(l[-1][0] + 1)%ne])
+            centre, ray = cercle2(Xi,Yi,n2,e)
             centres_intermediaires.append(centre)
             ray_intermediaires.append(ray)
             som += ray
-        if som > smax:
-            smax = som
-            rayons_max = ray_intermediaires
-            centres_max = centres_intermediaires
+            if som > smax:
+                smax = som
+                rayons_max = ray_intermediaires
+                centres_max = centres_intermediaires
     return centres_max, rayons_max, smax
 
 def cercle2(X,Y,k,e):
@@ -256,11 +272,6 @@ def cercle(X,Y,k,e,canvas,visu_state=False):
             
             if circle_test(x,y): c=0
 
-            # if c==0:
-            #     canvas.create_oval(x-1,y-1,x+1,y+1,fill="red", width=3)
-            # else:
-            #     canvas.create_oval(x-1,y-1,x+1,y+1,fill="green", width=3)
-                
             if c==1:
                 for i in range(-1,ne-1):
                     x1,y1 = X[i], Y[i]
@@ -284,9 +295,7 @@ def cercle(X,Y,k,e,canvas,visu_state=False):
                 for cercle in cercles:
                     cc=cercle[0]
                     d= circle_distance(x,y,cc[0],cc[1],cercle[1])
-                    #print(x,y,centre[0],centre[1],cercle[1],d)
                     if d < dmin and not in_circle(x,y,cc[0],cc[1],cercle[1]):
-                        #canvas.create_oval(x-1,y-1,x+1,y+1,fill="black", width=t)
                         dmin=d
                         T[1]=d
 
@@ -296,7 +305,6 @@ def cercle(X,Y,k,e,canvas,visu_state=False):
                     print(centre)
                     echec=0
                 else:
-                    #canvas.create_oval(x-1,y-1,x+1,y+1,fill="red", width=t)
                     echec += 1
         
         xmin, xmax = centre[0] - (xmax - xmin) / (math.sqrt(2) * 2), centre[0] + (xmax - xmin) / (math.sqrt(2) * 2) 
@@ -305,13 +313,10 @@ def cercle(X,Y,k,e,canvas,visu_state=False):
         if visu_state:
             canvas.create_rectangle(xmin, ymin, xmax, ymax, outline = 'blue')
             canvas.create_oval(centre[0]-1,centre[1]-1,centre[0]+1,centre[1]+1,fill="red", width=3)
-            # self.visu.add_point(centre[0],centre[1])
-            # self.visu.add_square(xmin, ymin,  xmax-xmin, ymax-ymin)
             
         precision = min(xmax - xmin, ymax - ymin)
     
     cercles.append((centre,T[0]))
-    #print(cercles)
     return (centre, T[0])
     
 def find_circle(canvas):
@@ -335,7 +340,6 @@ def find_circle(canvas):
         canvas.create_oval(xc-1,yc-1,xc+1,yc+1,fill="black", width=1)
         canvas.create_oval(xc-r,yc-r,xc+r,yc+r, width=3, outline = 'yellow')
         
-        #poly=[]
     
 def find_circle2(canvas):
     global k, e, x, y, poly, debug_graph, n1, n2
@@ -370,21 +374,6 @@ def motion(event):
 def switch_debug_coords(event):
     global debug_coords
     debug_coords= not debug_coords
-    
-    
-# def draw_polygon(data):
-#     global canvas
-#     print("Drawing polygon")
-#     for i in range(len(data)-1):
-#         x1=data[i][0]
-#         y1=data[i][1]
-#         x2=data[i+1][0]
-#         y2=data[i+1][1]
-#         canvas.create_line(x1,y1,x2,y2, fill="blue", width=4)
-#         canvas.create_oval(x1-2, y1-2, x1+2, y1+2, fill="black")
-#         canvas.create_oval(x2-2, y2-2, x2+2, y2+2, fill="black")
-#     canvas.create_line(data[-1][0], data[-1][1], data[0][0], data[0][1], fill="blue", width=4)
-
     
 def test_polygon(data):
     print("Test polygon")
@@ -422,26 +411,44 @@ def main(background=None):
     if background:
         image = PhotoImage(file = "captures/capture"+str(background)+".png").subsample(2, 2)
         canvas.create_image(0, 0, image = image, anchor = NW)
-
-    #root.attributes('-alpha',1)
+        
     canvas.grid(row=0, column=0)
     canvas.bind('<Button-1>', draw_line)
     root.bind('r', lambda i: find_circle(canvas))
     root.bind('p', lambda i: find_circle2(canvas))
     root.bind('<Motion>', motion)
     root.bind('d', switch_debug_coords)
-    root.bind('t', lambda i: trace_resultat_voronoi((659.8479022047273,607.0568980572237), 116.88004116015922, examples.poly_c7))
-    root.bind('y', lambda i: trouve_poly2(poly4, canvas))
-    root.bind('l', lambda i: trace_multi(poly4, result5))
     root.mainloop()
 
-def trouve_poly(polypara, canvas):
+def affichage_data(poly, n):
+    for i in range(n):
+        affiche_affinage(poly, i)
+        
+def affiche_affinage(poly, aff):
+    poly_cop=copy.copy(poly) 
+    poly_cop.affinage_exterieur(aff)
+    pt=poly_cop.getExterieur()
+    X,Y=[],[]
+    res="{ \"sites\":["
+    for i in range(len(pt)):
+        X.append(abs(pt[i].x))
+        Y.append(abs(pt[i].y))
+        if i==len(pt)-1:
+            res+=str(abs(pt[i].x))+","+str(abs(pt[i].y))
+        else:
+            res+=str(abs(pt[i].x))+","+str(abs(pt[i].y))+","
+    print(X)
+    print(Y)
+    res+="],\"queries\":[]}"
+    print(res)
+
+def trouve_poly_simple(polypara, canvas):
     global poly
     poly=polypara
     polyutils.draw_polygon(poly, canvas)
     find_circle(canvas)
-
-def trouve_poly2(polypara, canvas):
+    
+def trouve_poly_multi(polypara, canvas):
     global poly
     poly=polypara
     polyutils.draw_polygon(poly, canvas)
@@ -460,7 +467,6 @@ def trace_multi(polypara, result):
         canvas.create_oval(xc-1,yc-1,xc+1,yc+1,fill="black", width=1)
         canvas.create_oval(xc-r,yc-r,xc+r,yc+r, width=3, outline = 'red')
         
-        
 def trace_resultat_voronoi(centre, rayon, poly):
     global canvas
     polyutils.draw_polygon(poly.interieur, canvas)
@@ -470,8 +476,3 @@ def trace_resultat_voronoi(centre, rayon, poly):
     canvas.create_oval(x-1,y-1,x+1,y+1,fill="black", width=1)
     canvas.create_oval(x-rayon,y-rayon,x+rayon,y+rayon, width=3, outline = 'yellow')
     
-
-# result5=([[789.112057952674, 397.2090417878374], [431.13605903303693, 467.61434276449137], [609.8211996401549, 582.2870507398153]], [92.90440254499943, 58.12598129736006, 143.28703256673091], 294.3174164090904)
-# result4=([[425.2274151738604, 456.1286759710569], [720.5297414014494, 431.131016063317], [533.8377847773335, 599.1974138124416]], [48.782241121434794, 133.35821200716092, 111.11159952801658], 293.2520526566123)
-#trace_resultat_voronoi((659.8479022047273,607.0568980572237), 116.88004116015922, examples.poly_c7)
-main(10)

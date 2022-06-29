@@ -1,6 +1,6 @@
 from logging import raiseExceptions
 import math
-from fortunes import *
+from fortune import *
 from tkinter import *
 from Examples import *
 import numpy as np
@@ -108,8 +108,6 @@ class Polygone:
                     points=points[::-1]
                 if points[0].x != p1.x:
                     points=points[::-1]
-                # print(p1.__str__(), p2.__str__())
-                # print([p.__str__() for p in points])
                 res=res+points
             return res
             
@@ -144,25 +142,21 @@ def getDistance(event):
         print(distance)
         counter = 0
 
-# Ray Casting 2
-def interieur_test2(point, poly):
+def interieur_test(point, poly):
     inside = False
     eps = 0.00001
     for i in range(-1,len(poly)-1):
-        # Make sure A is the lower point of the edge
         A, B = poly[i], poly[i+1]
         if A.y > B.y:
             A, B = B, A
 
-        # Make sure point is not at same height as vertex
         if point.y == A.y or point.y == B.y:
             point.y += eps
 
         if (point.y > B.y or point.y < A.y or point.x > max(A.x, B.x)):
-            # The horizontal ray does not intersect with the edge
             continue
 
-        if point.x < min(A.x, B.x): # The ray intersects with the edge
+        if point.x < min(A.x, B.x): 
             inside = not inside
             continue
 
@@ -177,13 +171,11 @@ def interieur_test2(point, poly):
             m_point = math.inf
 
         if m_point >= m_edge:
-            # The ray intersects with the edge
             inside = not inside
             continue
 
     return inside
 
-# Ray Casting
 def interesection_rayon(point, p1, p2):
     if point.y==p1.y or point.y==p2.y:
         point.y=point.y+EPS
@@ -207,26 +199,7 @@ def interesection_rayon(point, p1, p2):
                 return True
             else:
                 return False
-            
-def interieur_test(point, poly):
-    total=0
-    for i in range(-1,len(poly)-1):
-        if poly[i].y<=poly[i+1].y:
-            p1=poly[i]
-            p2=poly[i+1]
-        else:
-            p1=poly[i+1]
-            p2=poly[i]
-            
-        if interesection_rayon(point, p1, p2):
-            total+=1
-            
-    if total%2==0:
-        return True
-    else:
-        return False
 
-# https://www.geeksforgeeks.org/minimum-distance-from-a-point-to-the-line-segment-using-vectors/
 def minDistance(p1, p2, p) :
     r=0
     AB = [None, None];
@@ -259,7 +232,7 @@ def minDistance(p1, p2, p) :
 
     return r
  
-def min_distance_poly3(point, poly):
+def min_distance_poly(point, poly):
     rmin=(-1)
     for i in range(-1,len(poly)-1):
         r=minDistance(poly[i],poly[i+1],point)
@@ -275,8 +248,8 @@ def trouve_min_cercle(poly, centres):
     print('Nombres de centres trouvés:', len(centres))
 
     for c in centres:
-        if interieur_test2(c, poly):
-            r=min_distance_poly3(c, poly)
+        if interieur_test(c, poly):
+            r=min_distance_poly(c, poly)
             #print((c.x, c.y), r)
             #dessin_cercle(c, r, 'red', epaisseur=1)
             if r>rmax:
@@ -291,7 +264,6 @@ def plot_centres(data, canvas, affinage=1):
 
     poly=copy.deepcopy(data)
     poly.affinage_exterieur(affinage)
-    #poly.affinage_interieur(affinage)
     centres=fortunes(poly.get_points(), canvas)
 
     centre, rayon = trouve_min_cercle(poly.get_points(), centres)
@@ -319,6 +291,6 @@ def show_tk(tk):
     tk.bind('<Motion>', mouvement)
     tk.mainloop()
 
-tk, canvas = init_tk_canvas(1000, 1000)
-plot_centres(poly_c7, canvas, 10)
-show_tk(tk)
+# tk, canvas = init_tk_canvas(1000, 1000)
+# plot_centres(poly_c7, canvas, 10)
+# show_tk(tk)

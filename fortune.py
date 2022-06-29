@@ -50,7 +50,6 @@ class Arete:
         if droite.y == gauche.y: # Cas particulier ou les deux points sont sur la même ordonnée Y
             self.m = math.inf
             
-            ## A REVOIR PRECISEMENT
             self.k = 0
         else:
             self.m = - (gauche.x - droite.x) / (gauche.y - droite.y)
@@ -210,13 +209,6 @@ class QueueOfEvents:
         for event in self.queue:
             debug(event)
 
-def find_new_y(p, x):
-    global y_pos, eps
-    dp = 2.0 * (p.y - y_pos)
-    b1 = -(2 * float(p.x)) / float(dp or eps)
-    c1 = y_pos + float(dp/4.0) + (p.x**2) / float(dp or eps)
-    return float(x**2) / float(dp or eps) + float(b1*x) + c1
-
 def para_intersect_x(para1, para2, y=None):
     global y_pos, eps
     if not y: y=y_pos
@@ -241,11 +233,6 @@ def para_intersect_x(para1, para2, y=None):
         # Si det<0, cela signifie (étude empirique) que para2.site.y est quasiment égal à y_pos
         # les valeurs renvoyées par expr_poly sont alors de l'odre de math.inf d'ou le signe <0
         if det<0:
-            # print(a2,b2,c2)
-            # print(para1.__str__())
-            # print(para2.__str__())
-            # print(y_pos)
-            # print('Déterminant négatif', det)
             return para2.site.x
         else:
             if a==0:
@@ -326,7 +313,6 @@ def traite_site_evnt(evnt):
         
     creer_cercle_evnt(parabole)
     creer_cercle_evnt(parabole_droite)
-    #creer_cercle_evnt(parabole_evnt)
 
     Voronoi.append(arete_gauche)
     Voronoi.append(arete_droite)
@@ -374,8 +360,6 @@ def creer_cercle_evnt(parabole):
     if evnt_position_y > y_pos:
         cirle_event = CercleEvnt(centre_cercle.x, evnt_position_y, parabole, centre_cercle)
         parabole.evnt = cirle_event
-        #parabole.prec.evnt = cirle_event
-        #parabole.suiv.evnt = cirle_event
         debug("Circle event ajoutée à la pile. " + cirle_event.__str__())
         Queue.insert(cirle_event)
 
@@ -432,12 +416,11 @@ def traite_cercle_evnt(evnt):
     creer_cercle_evnt(parabole.suiv)
         
 # Certaines arêtes ne sont pas terminée lors de l'exécution, cela permet de les tracer en fonction de leur équation
-# Pas 100% fonctionnel encore
+# Pas 100% fonctionnel
 def terminer_aretes():
     global Voronoi, x_max, y_max
     
     for ar in Voronoi:
-        # A VERIFIER PRECISEMENT
         if ar.origine.y==None:
             return
         else:
@@ -487,19 +470,9 @@ def fortunes(points, xmax=None, ymax=None, canvas=None):
             else:
                 print(event.__str__())
     
-    # terminer_aretes()
-    # for arete in Voronoi:
-    #     if arete:
-    #         if debug_aretes and canvas:
-    #             dessin_arete(arete, canvas)
-    #         if debug_logs:
-    #             debug(arete)
-    #         if debug_grap and canvas:
-    #             dessin_ori_arete(arete, canvas)
-    
-    #print([i.__str__() for i in Sommets])
-    
     return Sommets
+        
+        
         
 ## Fonctions d'utils / GUI
 
@@ -585,17 +558,3 @@ def dessin(data, interieur=None):
     root.bind('<Motion>', mouvement)
     root.mainloop()
     
-
-
-#dessin(affiner_poly(read_from_file('voronoi_test/save.dat'), 30))
-#write_to_file('voronoi_test/export.dat', affiner_poly(read_from_file('voronoi_test/save.dat'), 1))
-#test_affinage(poly2, 5)
-
-# dessin(
-#     affiner_poly(convertir_point(poly7), 10), 
-#     interieur=affiner_poly(convertir_point(inte_poly7), 10)
-#     )
-
-# TODO:
-# - Tracer correctement les arêtes (pour l'esthétique)
-# - Déterminant de l'orientation d'un polygone à comprendre (dans creer_cercle_evnt deuxième if)

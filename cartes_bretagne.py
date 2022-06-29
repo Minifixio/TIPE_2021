@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import norm
 from logging import raiseExceptions
 import math
-from fortunes import *
+from fortune import *
 from TkinterUtils import *
 from PolygonUtils import *
 from Structures import *
@@ -12,8 +12,6 @@ from cercles_poles import cercle_interieur
 import copy 
 import itertools
 import time
-
-
 
 EPS = .000001
 counter = 0
@@ -24,25 +22,21 @@ y1 = 0
 k=10
 e=1
 
-# Ray Casting 2
 def interieur_test2(point, poly):
     inside = False
     eps = 0.00001
     for i in range(-1,len(poly)-1):
-        # Make sure A is the lower point of the edge
         A, B = poly[i], poly[i+1]
         if A.y > B.y:
             A, B = B, A
 
-        # Make sure point is not at same height as vertex
         if point.y == A.y or point.y == B.y:
             point.y += eps
 
         if (point.y > B.y or point.y < A.y or point.x > max(A.x, B.x)):
-            # The horizontal ray does not intersect with the edge
             continue
 
-        if point.x < min(A.x, B.x): # The ray intersects with the edge
+        if point.x < min(A.x, B.x): 
             inside = not inside
             continue
 
@@ -57,7 +51,6 @@ def interieur_test2(point, poly):
             m_point = math.inf
 
         if m_point >= m_edge:
-            # The ray intersects with the edge
             inside = not inside
             continue
 
@@ -117,7 +110,6 @@ def trouve_min_cercle_fortunes(poly, centres, obstacles):
     
     rmax=0
     candidat=None
-    #print('Nombres de centres trouvés:', len(centres))
 
     for c in centres:
         if interieur_test2(c, poly):
@@ -127,13 +119,11 @@ def trouve_min_cercle_fortunes(poly, centres, obstacles):
                 r=min(rs, rp)
             else:
                 r=rp
-            #print((c.x, c.y), r)
-            #dessin_cercle(c, r, 'red', epaisseur=1)
+
             if r>rmax:
                 candidat=c
                 rmax=r
     
-    #print(candidat, rmax)
     return candidat, rmax
 
 def print_obstacles(obstacles, ax):
@@ -177,13 +167,10 @@ def trouve_min_cercle_poles(data, obstacles, ax, affinage=1):
     centre, rayon = cercle_interieur(data, [], k, e, obstacles=obstacles)
     dessin_point_matplotlib(centre, ax, 4, 'green')
     dessin_cercle_matplotlib(centre, rayon, ax, couleur='green')
-    #print('Centre : '  + str(centre))
     
 
-x_zoom=[100000, 420000]
-y_zoom=[6675000, 6975000]
-#x_zoom=[190000, 270000]
-#y_zoom=[6750000, 6800000]
+x_zoom=[213000, 290000]
+y_zoom=[6754000, 6820000]
 
 zones_sensibles_file='donneegeo/Zonages_preservation_OBPNB_GIPBE/Zonages_preservation_OBPNB_GIPBE.shx'
 bassins_file='donneegeo/bassin_versant/bassin_versant.shx'
@@ -208,8 +195,6 @@ def get_poly_in_perimeter(data, prec):
         if is_in_perimeter(poly):
             count+=1
             res.append(poly.exterior.coords[::prec])
-            #res.append([ (x-x_zoom[0], y-y_zoom[0]) for (x,y) in poly.exterior.coords[::20] ])
-    #print(count)
     return res
 
 def get_all_points_in_perimeter(data, prec):
@@ -232,14 +217,13 @@ def plot_zoom(file_obstacles, file_frontieres, x_zoom, y_zoom, type="fortunes"):
     ax.set_ylim(y_zoom[0], y_zoom[1])
 
     coords = list(geom.geometry[1].exterior.coords)
-    #poly_in_perimeter1 = get_poly_in_perimeter(geom.geometry.to_list(), 90)
-    poly_in_perimeter2 = get_poly_in_perimeter(bassins.geometry.to_list(), 50)
-    obstacles_points = get_all_points_in_perimeter(geom.geometry.to_list(), 50)
-    print('Nombre de points : ' + str(sum([ len(p) for p in poly_in_perimeter2]) + len(obstacles_points)) 
+    poly_in_perimeter = get_poly_in_perimeter(bassins.geometry.to_list(), 10)
+    obstacles_points = get_all_points_in_perimeter(geom.geometry.to_list(), 10)
+    print('Nombre de points : ' + str(sum([ len(p) for p in poly_in_perimeter]) + len(obstacles_points)) 
           + ' / ' 
           + 'Nombre d\'obstacles : ' + str(len(obstacles_points)))
 
-    for poly in poly_in_perimeter2:
+    for poly in poly_in_perimeter:
         if type=="fortunes": 
             plot_centres_fortunes(Polygone(poly), ax, x_zoom[1], y_zoom[1], obstacles_points, type=1)
         if type=="poles":
@@ -258,5 +242,5 @@ def plot_all(file1, file2):
         
     plt.show()
 
-plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom, type="poles")
+#plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom, type="poles")
 #plot_all(zones_sensibles_file, bassins_file)

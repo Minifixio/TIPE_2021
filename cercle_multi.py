@@ -1,27 +1,9 @@
 import math
 import random
-from Visualisation import Visualisation
-
-"""XX = [0,2,1]
-YY = [0,0.5,1]"""
-
-"""XX=[]
-YY=[]
-for i in range(3):
-    XX.append(random.uniform(0,100))
-    YY.append(random.uniform(0,100))"""
-
-"""XX = [4.64,5.36,6.9,6.74,7.05,6.2,5.14,5.71]
-YY = [4.92,6.08,5.98,3.62,2.19,0.86,1.83,4.11]"""
+from PolygonUtils import Visualisation
 
 XX = [7.26, 3.05, 2.02, 4.42, 6.4, 7.97]
 YY = [2.87, 2.46, 3.29, 6.86, 7.34, 5.53]
-
-"""XX = [0,6.4,3.6]
-YY = [0,4.8,7.2]"""
-
-"""XX = [235,486,760,699,611,482,372]
-YY = [209,154,261,498,649,625,532]"""
 
 def pos(a,b,c):
     if a >= b and a<= c:
@@ -253,7 +235,6 @@ def convertir_coord(X,Y):
     return res
 
 coords=convertir_coord(XX,YY)
-#centre, rayon, s =centre_multiple2(XX,YY,2000,500,2)
 centre, rayon, s = centre_multiple(XX,YY,300,120,3,1)
 visu = Visualisation(coords)
 for i in range(len(centre)):

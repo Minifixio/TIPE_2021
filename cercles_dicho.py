@@ -129,10 +129,6 @@ def cercle(X,Y,k,e,canvas,debug=False,visu_state=False):
         xmin, xmax = centre[0] - (xmax - xmin) / (math.sqrt(2) * 2), centre[0] + (xmax - xmin) / (math.sqrt(2) * 2) 
         ymin, ymax = centre[1] - (ymax - ymin) / (math.sqrt(2) * 2), centre[1] + (ymax - ymin) / (math.sqrt(2) * 2)
         
-        # if visu_state:
-        #     self.visu.add_point(centre[0],centre[1])
-        #     self.visu.add_square(xmin, ymin,  xmax-xmin, ymax-ymin)
-            
         precision = min(xmax - xmin, ymax - ymin)
     
     cercles.append((centre,T[0]))
@@ -214,7 +210,6 @@ def find_circle(canvas):
         r=c[1]
         canvas.create_oval(xc-1,yc-1,xc+1,yc+1,fill="black", width=1)
         canvas.create_oval(xc-r,yc-r,xc+r,yc+r, width=1)
-        #poly=[]
 
 def find_circle_coeff(data, canvas, R):
     global k
@@ -242,7 +237,6 @@ def find_circle_coeff(data, canvas, R):
         r=c[1]
         canvas.create_oval(xc-1,yc-1,xc+1,yc+1,fill="black", width=1)
         canvas.create_oval(xc-r,yc-r,xc+r,yc+r, width=1)
-        #poly=[]
     
 def motion(event):
     global debug_coords
@@ -264,8 +258,6 @@ if __name__ == '__main__':
     root.bind('r', lambda i: find_circle(canvas))
     root.bind('<Motion>', motion)
     root.bind('d', switch_debug_coords)
-    # poly5=[(86, 206), (257, 102), (438, 210), (438, 402), (309, 364), (155, 450)]
-    # find_circle_coeff(poly5, canvas, [0.4, 0.2, 0.9, 0.1, 0.8, 0.3])
     root.mainloop()
 
 

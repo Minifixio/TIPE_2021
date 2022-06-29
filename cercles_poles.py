@@ -118,7 +118,6 @@ def cercle_interieur(ext, inte, k, e, obstacles=None, canvas=None, visu_state=Fa
                 if dmin > T[0]:
                     T[0] = dmin
                     centre = Point(x,y)
-                    #print(centre.__str__())
                     echec=0
                 else:
                     echec += 1
@@ -129,8 +128,6 @@ def cercle_interieur(ext, inte, k, e, obstacles=None, canvas=None, visu_state=Fa
         if visu_state:
             canvas.create_rectangle(xmin, ymin, xmax, ymax, outline = 'blue')
             canvas.create_oval(centre.x-1,centre.y-1,centre.x+1,centre.y+1,fill="red", width=3)
-            # self.visu.add_point(centre[0],centre[1])
-            # self.visu.add_square(xmin, ymin,  xmax-xmin, ymax-ymin)
             
         precision = min(xmax - xmin, ymax - ymin)
     
