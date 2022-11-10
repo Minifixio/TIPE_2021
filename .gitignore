@@ -2,3 +2,5 @@ __pycache__
 donneegeo
 Structures.pyc
 Visualisation.pyc
+tests
+voronoi_test

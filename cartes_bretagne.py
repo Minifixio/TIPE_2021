@@ -242,5 +242,5 @@ def plot_all(file1, file2):
         
     plt.show()
 
-#plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom, type="poles")
+plot_zoom(zones_sensibles_file, bassins_file, x_zoom, y_zoom, type="fortune")
 #plot_all(zones_sensibles_file, bassins_file)
