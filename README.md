@@ -29,4 +29,4 @@ The map used | The algorithm applied in every county| A zoom
 :-------------------------:|:-------------------------:|:-------------------------:
 ![](https://github.com/Minifixio/TIPE_2021/blob/master/assets/bretagne1.png?raw=true) | ![](https://github.com/Minifixio/TIPE_2021/blob/master/assets/bretagne2.png?raw=true) | ![](https://github.com/Minifixio/TIPE_2021/blob/master/assets/bretagne3.png?raw=true)
 
-
+You can found the slides describing the project [here](https://github.com/Minifixio/TIPE_2021/blob/master/assets/Diapo_TIPE_export.pdf)
